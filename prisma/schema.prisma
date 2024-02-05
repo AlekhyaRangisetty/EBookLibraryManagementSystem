@@ -1,0 +1,84 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Admin {
+  id           String @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  email        String @unique
+  passwordHash String
+}
+
+model User {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  email        String        @unique
+  passwordHash String
+  transactions Transaction[]
+  role         Role          @default(USER)
+  payments     Payment[]
+}
+
+model Media {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  title        String
+  rentPerDay   Float
+  author       String
+  publisher    String
+  description  String
+  transactions Transaction[]
+  category     String[]
+
+  @@map("book")
+}
+
+model Transaction {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  borrowedAt    DateTime
+  returnedAt    DateTime?
+  amount        Float
+  paid          Float         @default(0)
+  paymentStatus PaymentStatus @default(UNPAID)
+
+  media   Media  @relation(fields: [mediaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  mediaId String @db.ObjectId
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId  String @db.ObjectId
+}
+
+model Payment {
+  id        String        @id @default(auto()) @map("_id") @db.ObjectId
+  amount    Float
+  createdAt DateTime      @default(now())
+  method    PaymentMethod
+  status    PaymentStatus
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId String @db.ObjectId
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
+}
+
+enum PaymentMethod {
+  DEBIT_CARD
+  CREDIT_CARD
+}
+
+enum MediaType {
+  BOOK
+  VIDEO
+  AUDIO
+}
+
+enum Role {
+  ADMIN
+  USER
+}
